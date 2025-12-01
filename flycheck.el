@@ -1335,7 +1335,7 @@ just return nil."
       (flycheck-mode) ;; so that we can exapnd \\[flycheck-<function>]
       (let ((help
              (substitute-command-keys
-        "Flycheck automatically runs checks on writable files when changed.
+              "Flycheck automatically runs checks on writable files when changed.
 Mode line status for the current buffer:
   FlyC        Not been checked yet
   FlyC*       Flycheck is running
@@ -1611,21 +1611,6 @@ Safely delete all files and directories listed in
   (seq-do #'flycheck-safe-delete flycheck-temporaries)
   (setq flycheck-temporaries nil))
 
-(defun flycheck-rx-file-name (form)
-  "Translate the `(file-name)' FORM into a regular expression."
-  (let ((body (or (cdr form) '((minimal-match
-                                (one-or-more not-newline))))))
-    (rx-to-string `(group-n 1 ,@body) t)))
-
-(defun flycheck-rx-message (form)
-  "Translate the `(message)' FORM into a regular expression."
-  (let ((body (or (cdr form) '((one-or-more not-newline)))))
-    (rx-to-string `(group-n 4 ,@body) t)))
-
-(defun flycheck-rx-id (form)
-  "Translate the `(id)' FORM into a regular expression."
-  (rx-to-string `(group-n 5 ,@(cdr form)) t))
-
 (defun flycheck-rx-to-string (form &optional no-group)
   "Like `rx-to-string' for FORM, but with special keywords:
 
@@ -1658,16 +1643,18 @@ Safely delete all files and directories listed in
 NO-GROUP is passed to `rx-to-string'.
 
 See `rx' for a complete list of all built-in `rx' forms."
-  (let ((rx-constituents
-         (append
-          `((file-name flycheck-rx-file-name 0 nil) ;; group 1
-            (line . ,(rx (group-n 2 (one-or-more digit))))
-            (column . ,(rx (group-n 3 (one-or-more digit))))
-            (message flycheck-rx-message 0 nil) ;; group 4
-            (id flycheck-rx-id 0 nil) ;; group 5
-            (end-line . ,(rx (group-n 6 (one-or-more digit))))
-            (end-column . ,(rx (group-n 7 (one-or-more digit)))))
-          rx-constituents nil)))
+  (rx-let-eval
+      `((file-name (&rest pat) (group-n 1
+                                 ,(or 'pat
+                                      '(minimal-match (one-or-more not-newline)))))
+        (line (group-n 2 (one-or-more digit)))
+        (column (group-n 3 (one-or-more digit)))
+        (message (&rest pat) (group-n 4
+                               ,(or 'pat
+                                    '(one-or-more not-newline))))
+        (id (&rest pat) (group-n 5 pat))
+        (end-line (group-n 6 (one-or-more digit)))
+        (end-column (group-n 7 (one-or-more digit))))
     (rx-to-string form no-group)))
 
 (defun flycheck-current-load-file ()
@@ -2219,7 +2206,7 @@ Signal an error, if any property has an invalid value."
                 (lambda ()
                   ;; Run predicate in the checker's default directory
                   (let ((default-directory
-                          (flycheck-compute-working-directory symbol)))
+                         (flycheck-compute-working-directory symbol)))
                     (funcall predicate)))))
           (real-enabled
            (lambda ()
@@ -2227,7 +2214,7 @@ Signal an error, if any property has an invalid value."
                  (or (null enabled)
                      ;; Run enabled in the checker's default directory
                      (let ((default-directory
-                             (flycheck-compute-working-directory symbol)))
+                            (flycheck-compute-working-directory symbol)))
                        (funcall enabled)))
                (lwarn 'flycheck
                       :warning "%S is no valid Flycheck syntax checker.
@@ -2929,7 +2916,7 @@ Slots:
   "Start a SYNTAX-CHECK with CALLBACK."
   (let ((checker (flycheck-syntax-check-checker syntax-check))
         (default-directory
-          (flycheck-syntax-check-working-directory syntax-check)))
+         (flycheck-syntax-check-working-directory syntax-check)))
     (setf (flycheck-syntax-check-context syntax-check)
           (funcall (flycheck-checker-get checker 'start) checker callback))))
 
@@ -5262,7 +5249,7 @@ See `flycheck-error-level-<'."
 (defvar flycheck-error-list-mode-line-map
   (let ((map (make-sparse-keymap)))
     (define-key map [mode-line mouse-1]
-      #'flycheck-error-list-mouse-switch-to-source)
+                #'flycheck-error-list-mouse-switch-to-source)
     map)
   "Keymap for error list mode line.")
 
@@ -9975,7 +9962,7 @@ See URL `https://eslint.org/'."
   :verify
   (lambda (_)
     (let* ((default-directory
-             (flycheck-compute-working-directory 'javascript-eslint))
+            (flycheck-compute-working-directory 'javascript-eslint))
            (have-config (flycheck-eslint-config-exists-p)))
       (list
        (flycheck-verification-result-new
@@ -10253,7 +10240,7 @@ Relative paths are relative to the file being checked."
 
 The value of this variable is a list of strings, where each
 string is a module to `use' in Perl."
-  :type '(repeat :tag "Module")
+  :type '(repeat (string :tag "Module"))
   :safe #'flycheck-string-list-p
   :package-version '(flycheck . "32"))
 
@@ -12104,8 +12091,8 @@ The arguments CHECKER and BUFFER are only passed through."
   (condition-case nil
       (let* ((json-array-type 'list)
              (json-object-type 'plist)
-            (filename (buffer-file-name buffer))
-            (errors (json-read-from-string output)))
+             (filename (buffer-file-name buffer))
+             (errors (json-read-from-string output)))
         (mapcar (lambda (e)
                   (flycheck-error-new
                    :checker checker
