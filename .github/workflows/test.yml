@@ -37,7 +37,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-
     - uses: jcs090218/setup-emacs@master
       with:
         version: ${{ matrix.emacs-version }}
@@ -50,9 +49,9 @@ jobs:
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
         make init
-        make format
-        make unit
-        make specs
+        make -d format
+        make -d unit
+        make -d specs
 
     - name: Run tests (Windows)
       if: matrix.os == 'windows-latest'
